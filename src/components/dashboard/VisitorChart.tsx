@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   AreaChart,
@@ -39,7 +39,7 @@ function CustomTooltip({ active, payload, label }: TooltipProps) {
         boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
       }}
     >
-      <p className="text-navy-300 text-xs mb-1">{formatDate(label)}</p>
+      <p className="text-navy-300 text-xs mb-1">{label ? formatDate(label) : ""}</p>
       <p className="text-white font-semibold text-sm">
         {formatNumber(payload[0].value)}{" "}
         <span className="text-navy-300 font-normal">visitors</span>
