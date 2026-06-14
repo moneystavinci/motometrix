@@ -113,7 +113,7 @@ export async function fetchGA4Metrics(userId: string): Promise<GA4Metrics> {
           dimensions: [{ name: "pagePath" }],
           metrics: [{ name: "totalUsers" }],
           orderBys: [{ metric: { metricName: "totalUsers" }, desc: true }],
-          limit: 5,
+          limit: "5",
         },
       }),
       // Top traffic source
@@ -124,7 +124,7 @@ export async function fetchGA4Metrics(userId: string): Promise<GA4Metrics> {
           dimensions: [{ name: "sessionDefaultChannelGroup" }],
           metrics: [{ name: "totalUsers" }],
           orderBys: [{ metric: { metricName: "totalUsers" }, desc: true }],
-          limit: 1,
+          limit: "1",
         },
       }),
       // Daily breakdown for chart
