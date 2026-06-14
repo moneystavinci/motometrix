@@ -1,7 +1,8 @@
-import { google } from "googleapis";
+﻿import { google } from "googleapis";
 import { decrypt } from "@/lib/encryption";
 import { prisma } from "@/lib/prisma";
 import type { GA4Metrics } from "@/types/analytics";
+import { getMockGA4Metrics } from "@/types/analytics";
 
 export type { GA4Metrics } from "@/types/analytics";
 
