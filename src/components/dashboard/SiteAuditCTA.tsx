@@ -28,7 +28,7 @@ export default function SiteAuditCTA() {
         className="shrink-0 font-bold px-6 py-3 rounded-xl transition-colors duration-200 text-sm whitespace-nowrap"
         style={{ background: "#e6b820", color: "#0a1530" }}
       >
-        Request a Site Audit ?
+        Request a Site Audit
       </a>
     </div>
   );
