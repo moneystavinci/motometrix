@@ -4,9 +4,7 @@ export default function SiteAuditCTA() {
   const body = encodeURIComponent(
     "Hi,\n\nI'd like to request a site audit for my website.\n\nI found you through Motometrix and would love to improve my website performance.\n\nPlease get in touch!\n\nThanks,"
   );
-
   const mailtoLink = `mailto:${email}?subject=${subject}&body=${body}`;
-
   return (
     <div
       className="rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4"
@@ -24,6 +22,7 @@ export default function SiteAuditCTA() {
         </p>
       </div>
       
+      <a
         href={mailtoLink}
         className="shrink-0 font-bold px-6 py-3 rounded-xl transition-colors duration-200 text-sm whitespace-nowrap"
         style={{ background: "#e6b820", color: "#0a1530" }}
