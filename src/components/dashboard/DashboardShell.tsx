@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import DashboardNav from "./DashboardNav";
@@ -7,6 +7,7 @@ import VisitorChart from "./VisitorChart";
 import TopPages from "./TopPages";
 import TopKeywords from "./TopKeywords";
 import DemoBanner from "./DemoBanner";
+import SiteAuditCTA from "./SiteAuditCTA";
 import {
   GA4Metrics,
   SearchConsoleMetrics,
@@ -115,6 +116,11 @@ export default function DashboardShell({ user }: DashboardShellProps) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 opacity-0 animate-fade-up animate-delay-300">
             <TopPages pages={data?.ga4?.topPages ?? null} loading={loading} />
             <TopKeywords keywords={data?.searchConsole?.topKeywords ?? null} loading={loading} />
+          </div>
+
+          {/* Site Audit CTA */}
+          <div className="opacity-0 animate-fade-up animate-delay-300">
+            <SiteAuditCTA />
           </div>
 
           {/* Footer */}
