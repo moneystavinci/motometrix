@@ -8,7 +8,8 @@ export default function SiteAuditCTA() {
   const mailtoLink = `mailto:${email}?subject=${subject}&body=${body}`;
 
   return (
-    <div className="rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4"
+    <div
+      className="rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4"
       style={{
         background: "linear-gradient(135deg, rgba(230,184,32,0.08), rgba(230,184,32,0.04))",
         border: "1px solid rgba(230,184,32,0.2)",
