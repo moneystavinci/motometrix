@@ -1,4 +1,4 @@
-import Link from "next/link";
+ï»¿import Link from "next/link";
 
 const steps = [
   {
@@ -12,7 +12,7 @@ const steps = [
     number: "02",
     title: "Add the Tracking Code to Your Website",
     description:
-      "Once your GA4 property is created, Google will give you a Measurement ID (it looks like G-XXXXXXXXXX) and a code snippet. Paste this snippet into the <head> section of every page on your site. If you use WordPress, Wix, or Squarespace, there is a built-in field for this — no coding needed.",
+      "Once your GA4 property is created, Google will give you a Measurement ID (it looks like G-XXXXXXXXXX) and a code snippet. Paste this snippet into the <head> section of every page on your site. If you use WordPress, Wix, or Squarespace, there is a built-in field for this â€” no coding needed.",
     link: {
       label: "How to add GA4 to your site ?",
       href: "https://support.google.com/analytics/answer/9304153",
@@ -22,7 +22,7 @@ const steps = [
     number: "03",
     title: "Connect GA4 to Motometrix",
     description:
-      "Come back to Motometrix and go to your account settings. Enter your GA4 Measurement ID (G-XXXXXXXXXX) and grant Motometrix read access to your Analytics account. Your real data will appear on your dashboard within 24–48 hours.",
+      "Come back to Motometrix and go to your account settings. Enter your GA4 Measurement ID (G-XXXXXXXXXX) and grant Motometrix read access to your Analytics account. Your real data will appear on your dashboard within 24â€“48 hours.",
     link: null,
   },
 ];
