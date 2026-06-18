@@ -147,7 +147,7 @@ export default function OnboardingPage() {
               href={mailtoLink}
               className="flex-1 text-center font-bold px-6 py-3 rounded-xl text-sm transition-colors"
               style={{ background: "#e6b820", color: "#0a1530" }}
-            >
+            <a
               Contact Us for Help
             </a>
             
@@ -160,7 +160,7 @@ export default function OnboardingPage() {
                 border: "1px solid rgba(230,184,32,0.4)",
                 color: "#e6b820",
               }}
-            >
+             <a
               Check Out Our Verified Developers ?
             </a>
           </div>
