@@ -32,9 +32,11 @@ export default function DemoBanner() {
       <div className="flex-1 min-w-0">
         <p className="text-white font-semibold text-sm mb-0.5">You&apos;re viewing demo data</p>
         <p className="text-navy-300 text-xs leading-relaxed">
-          These numbers are illustrative examples. To see your real website data, make sure
-          you have Google Analytics 4 and Google Search Console set up on your site. Once
-          connected, your live numbers will appear here automatically.
+                    These numbers are illustrative examples. To see your real website data, you need
+                    Google Analytics 4 set up on your site.{" "}
+                    <a href="/onboarding" className="underline text-white hover:text-yellow-400 transition-colors">
+                    Follow our setup guide ?
+                    </a>
         </p>
       </div>
 
