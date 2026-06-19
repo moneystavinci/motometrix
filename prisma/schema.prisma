@@ -22,6 +22,8 @@ model User {
 
   // App fields
   websiteUrl      String?
+  ga4PropertyId   String?
+  searchConsoleUrl String?
   mailchimpSynced Boolean   @default(false)
   lastLoginAt     DateTime  @default(now())
 
