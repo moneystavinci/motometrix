@@ -16,8 +16,8 @@ const steps = [
   {
     number: 03,
     title: Connect GA4 to Motometrix,
-    description: Come back to Motometrix and go to your account settings. Enter your GA4 Measurement ID and grant Motometrix read access. Your real data will appear within 24-48 hours.,
-    link: null,
+    description: Come back to Motometrix and go to Settings. Enter your GA4 Measurement ID (G-XXXXXXXXXX) and your Search Console URL. Your real data will start appearing on your dashboard within 24-48 hours.
+    link: { label: "Go to Settings", href: "/settings" },
   },
 ];
 
