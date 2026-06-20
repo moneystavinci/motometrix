@@ -33,7 +33,7 @@ export async function fetchSearchConsoleMetrics(
 
     // Discover site URL — prefer stored value, fall back to first verified property
     const sites = await searchConsole.sites.list();
-    const siteUrl = dbUser.websiteUrl ?? sites.data.siteEntry?.[0]?.siteUrl;
+    const siteUrl = dbUser.searchConsoleUrl ?? sites.data.siteEntry?.[0]?.siteUrl;
 
     if (!siteUrl) return getMockSearchConsoleMetrics();
 
