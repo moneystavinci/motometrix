@@ -7,10 +7,9 @@ const steps = [
 ];
 
 export default function OnboardingPage() {
-  const email = "sales@smartcontractsescrow.net";
   const subject = encodeURIComponent("GA4 Setup Help Request");
-  const body = encodeURIComponent("Hi,\n\nI need help setting up Google Analytics 4 for my website.\n\nI found you through Motometrix.\n\nPlease get in touch!\n\nThanks,");
-  const mailtoLink = `mailto:${email}?subject=${subject}&body=${body}`;
+  const body = encodeURIComponent("Hi,\n\nI need help setting up Google Analytics 4 for my website.\n\nPlease get in touch!\n\nThanks,");
+  const mailtoLink = `mailto:?subject=${subject}&body=${body}`;
 
   return (
     <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #060d1f 0%, #0a1530 40%, #0f1f45 100%)" }}>
@@ -48,7 +47,7 @@ export default function OnboardingPage() {
           <h3 className="text-white font-semibold text-lg mb-2">Need a hand setting this up?</h3>
           <p className="text-navy-300 text-sm mb-6 leading-relaxed">If the steps above feel overwhelming, you do not have to do this alone. Reach out to us directly or browse our network of verified developers.</p>
           <div className="flex flex-col sm:flex-row gap-3">
-            <a href={mailtoLink} className="flex-1 text-center font-bold px-6 py-3 rounded-xl text-sm" style={{ background: "#e6b820", color: "#0a1530" }}>Contact Us for Help</a>
+            <a href={mailtoLink} className="flex-1 text-center font-bold px-6 py-3 rounded-xl text-sm" style={{ background: "#e6b820", color: "#0a1530" }}>Contact Your Developer</a>
             <a href="https://www.smartcontractsescrow.net/find-seller" target="_blank" rel="noopener noreferrer" className="flex-1 text-center font-bold px-6 py-3 rounded-xl text-sm" style={{ background: "transparent", border: "1px solid rgba(230,184,32,0.4)", color: "#e6b820" }}>Check Out Our Verified Developers</a>
           </div>
         </div>
