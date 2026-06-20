@@ -3,7 +3,7 @@ import Link from "next/link";
 const steps = [
   { number: "01", title: "Create a Google Analytics 4 Account", description: "Go to analytics.google.com and sign in with your Google account. Click Start measuring, enter your account name, and follow the prompts to create a new GA4 property for your website.", link: { label: "Open Google Analytics", href: "https://analytics.google.com" } },
   { number: "02", title: "Add the Tracking Code to Your Website", description: "Once your GA4 property is created, Google will give you a Measurement ID (G-XXXXXXXXXX) and a code snippet. Paste this into the head section of every page on your site. WordPress, Wix, and Squarespace all have a built-in field for this.", link: { label: "How to add GA4 to your site", href: "https://support.google.com/analytics/answer/9304153" } },
-  { number: "03", title: "Connect GA4 to Motometrix", description: "Come back to Motometrix and go to your account settings. Enter your GA4 Measurement ID and grant Motometrix read access. Your real data will appear within 24-48 hours.", link: null },
+  { number: "03", title: "You're Connected Automatically", description: "Once GA4 is set up on your website, Motometrix automatically detects your property the moment you sign in with Google — no extra steps needed. Your real data will appear on your dashboard within 24-48 hours. If you use Search Console and want to point Motometrix to a specific verified site, you can add that URL in Settings.", link: { label: "Go to Settings", href: "/settings" } }, 
 ];
 
 export default function OnboardingPage() {
