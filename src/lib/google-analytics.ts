@@ -53,163 +53,137 @@ export async function fetchGA4Metrics(userId: string): Promise<GA4Metrics> {
   try {
     const { oauth2Client, dbUser } = await getAuthenticatedClient(userId);
 
-    } catch (err) {
+    // 1. Discover GA4 property
+    const analyticsAdmin = google.analyticsadmin({ version: "v1beta", auth: oauth2Client });
+    const propertiesRes = await analyticsAdmin.properties.list({
+      filter: "parent:accounts/-",
+      pageSize: 1,
+    });
+
+    console.log("[GA4] Properties response:", JSON.stringify(propertiesRes.data));
+
+    const property = propertiesRes.data.properties?.[0];
+    const propertyId = property?.name?.replace("properties/", "") ?? null;
+
+    console.log("[GA4] Property ID found:", propertyId);
+
+    // Auto-detect website URL from GA4 property
+    let websiteUrl = dbUser.websiteUrl ?? null;
+    if (!websiteUrl && property?.displayName) {
+      try {
+        const streams = await analyticsAdmin.properties.dataStreams.list({
+          parent: property.name!,
+        });
+        const webStream = streams.data.dataStreams?.find((s) => s.type === "WEB_DATA_STREAM");
+        if (webStream?.webStreamData?.defaultUri) {
+          websiteUrl = webStream.webStreamData.defaultUri;
+          await prisma.user.update({ where: { id: userId }, data: { websiteUrl } });
+        }
+      } catch {
+        // Non-critical
+      }
+    }
+
+    if (!propertyId) {
+      console.log("[GA4] No propertyId found, returning mock data");
+      return getMockGA4Metrics();
+    }
+
+    const analyticsData = google.analyticsdata({ version: "v1beta", auth: oauth2Client });
+
+    const [currentReport, previousReport, topPagesReport, topSourceReport, dailyReport] =
+      await Promise.all([
+        analyticsData.properties.runReport({
+          property: `properties/${propertyId}`,
+          requestBody: {
+            dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+            metrics: [{ name: "totalUsers" }, { name: "averageSessionDuration" }],
+          },
+        }),
+        analyticsData.properties.runReport({
+          property: `properties/${propertyId}`,
+          requestBody: {
+            dateRanges: [{ startDate: "60daysAgo", endDate: "31daysAgo" }],
+            metrics: [{ name: "totalUsers" }],
+          },
+        }),
+        analyticsData.properties.runReport({
+          property: `properties/${propertyId}`,
+          requestBody: {
+            dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+            dimensions: [{ name: "pagePath" }],
+            metrics: [{ name: "totalUsers" }],
+            orderBys: [{ metric: { metricName: "totalUsers" }, desc: true }],
+            limit: "5",
+          },
+        }),
+        analyticsData.properties.runReport({
+          property: `properties/${propertyId}`,
+          requestBody: {
+            dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+            dimensions: [{ name: "sessionDefaultChannelGroup" }],
+            metrics: [{ name: "totalUsers" }],
+            orderBys: [{ metric: { metricName: "totalUsers" }, desc: true }],
+            limit: "1",
+          },
+        }),
+        analyticsData.properties.runReport({
+          property: `properties/${propertyId}`,
+          requestBody: {
+            dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+            dimensions: [{ name: "date" }],
+            metrics: [{ name: "totalUsers" }],
+            orderBys: [{ dimension: { dimensionName: "date" } }],
+          },
+        }),
+      ]);
+
+    const totalVisitors =
+      parseInt(currentReport.data.rows?.[0]?.metricValues?.[0]?.value ?? "0") || 0;
+    const avgDuration =
+      parseFloat(currentReport.data.rows?.[0]?.metricValues?.[1]?.value ?? "0") || 0;
+    const previousVisitors =
+      parseInt(previousReport.data.rows?.[0]?.metricValues?.[0]?.value ?? "0") || 0;
+
+    const growthPercent =
+      previousVisitors > 0
+        ? Math.round(((totalVisitors - previousVisitors) / previousVisitors) * 100)
+        : 0;
+
+    const topSource = topSourceReport.data.rows?.[0]?.dimensionValues?.[0]?.value ?? "Direct";
+    const friendlySource = friendlyChannelName(topSource);
+
+    const topPages: Array<{ page: string; visitors: number }> = (
+      topPagesReport.data.rows ?? []
+    ).map((row) => ({
+      page: row.dimensionValues?.[0]?.value ?? "/",
+      visitors: parseInt(row.metricValues?.[0]?.value ?? "0"),
+    }));
+
+    const dailyVisitors: Array<{ date: string; visitors: number }> = (
+      dailyReport.data.rows ?? []
+    ).map((row) => {
+      const raw = row.dimensionValues?.[0]?.value ?? "";
+      const formatted = `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
+      return {
+        date: formatted,
+        visitors: parseInt(row.metricValues?.[0]?.value ?? "0"),
+      };
+    });
+
+    return {
+      totalVisitors,
+      avgSessionDurationSeconds: Math.round(avgDuration),
+      topSource: friendlySource,
+      dailyVisitors,
+      topPages,
+      previousPeriodVisitors: previousVisitors,
+      growthPercent,
+      propertyId,
+      websiteUrl,
+    };
+  } catch (err) {
     console.error("[GA4] fetchGA4Metrics error:", err);
     return getMockGA4Metrics();
   }
-
-  // 1. Discover GA4 property
-  const analyticsAdmin = google.analyticsadmin({ version: "v1beta", auth: oauth2Client });
-  const propertiesRes = await analyticsAdmin.properties.list({
-    filter: "parent:accounts/-",
-    pageSize: 1,
-  });
-
-  console.log("[GA4] Properties response:", JSON.stringify(propertiesRes.data));
-
-  const property = propertiesRes.data.properties?.[0];
-  const propertyId = property?.name?.replace("properties/", "") ?? null;
-  
-  console.log("[GA4] Property ID found:", propertyId);
-
-  // Auto-detect website URL from GA4 property
-  let websiteUrl = dbUser.websiteUrl ?? null;
-  if (!websiteUrl && property?.displayName) {
-    // Try to get data stream URL
-    try {
-      const streams = await analyticsAdmin.properties.dataStreams.list({
-        parent: property.name!,
-      });
-      const webStream = streams.data.dataStreams?.find((s) => s.type === "WEB_DATA_STREAM");
-      if (webStream?.webStreamData?.defaultUri) {
-        websiteUrl = webStream.webStreamData.defaultUri;
-        await prisma.user.update({ where: { id: userId }, data: { websiteUrl } });
-      }
-    } catch {
-      // Non-critical
-    }
-  }
-
-  if (!propertyId) {
-    return getMockGA4Metrics();
-  }
-
-  const analyticsData = google.analyticsdata({ version: "v1beta", auth: oauth2Client });
-
-  // Fetch current 30-day period
-  const [currentReport, previousReport, topPagesReport, topSourceReport, dailyReport] =
-    await Promise.all([
-      // Current 30 days — total visitors
-      analyticsData.properties.runReport({
-        property: `properties/${propertyId}`,
-        requestBody: {
-          dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
-          metrics: [
-            { name: "totalUsers" },
-            { name: "averageSessionDuration" },
-          ],
-        },
-      }),
-      // Previous 30 days for growth %
-      analyticsData.properties.runReport({
-        property: `properties/${propertyId}`,
-        requestBody: {
-          dateRanges: [{ startDate: "60daysAgo", endDate: "31daysAgo" }],
-          metrics: [{ name: "totalUsers" }],
-        },
-      }),
-      // Top pages
-      analyticsData.properties.runReport({
-        property: `properties/${propertyId}`,
-        requestBody: {
-          dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
-          dimensions: [{ name: "pagePath" }],
-          metrics: [{ name: "totalUsers" }],
-          orderBys: [{ metric: { metricName: "totalUsers" }, desc: true }],
-          limit: "5",
-        },
-      }),
-      // Top traffic source
-      analyticsData.properties.runReport({
-        property: `properties/${propertyId}`,
-        requestBody: {
-          dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
-          dimensions: [{ name: "sessionDefaultChannelGroup" }],
-          metrics: [{ name: "totalUsers" }],
-          orderBys: [{ metric: { metricName: "totalUsers" }, desc: true }],
-          limit: "1",
-        },
-      }),
-      // Daily breakdown for chart
-      analyticsData.properties.runReport({
-        property: `properties/${propertyId}`,
-        requestBody: {
-          dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
-          dimensions: [{ name: "date" }],
-          metrics: [{ name: "totalUsers" }],
-          orderBys: [{ dimension: { dimensionName: "date" } }],
-        },
-      }),
-    ]);
-
-  const totalVisitors =
-    parseInt(currentReport.data.rows?.[0]?.metricValues?.[0]?.value ?? "0") || 0;
-  const avgDuration =
-    parseFloat(currentReport.data.rows?.[0]?.metricValues?.[1]?.value ?? "0") || 0;
-  const previousVisitors =
-    parseInt(previousReport.data.rows?.[0]?.metricValues?.[0]?.value ?? "0") || 0;
-
-  const growthPercent =
-    previousVisitors > 0
-      ? Math.round(((totalVisitors - previousVisitors) / previousVisitors) * 100)
-      : 0;
-
-  const topSource = topSourceReport.data.rows?.[0]?.dimensionValues?.[0]?.value ?? "Direct";
-  const friendlySource = friendlyChannelName(topSource);
-
-  const topPages: Array<{ page: string; visitors: number }> = (
-    topPagesReport.data.rows ?? []
-  ).map((row) => ({
-    page: row.dimensionValues?.[0]?.value ?? "/",
-    visitors: parseInt(row.metricValues?.[0]?.value ?? "0"),
-  }));
-
-  const dailyVisitors: Array<{ date: string; visitors: number }> = (
-    dailyReport.data.rows ?? []
-  ).map((row) => {
-    const raw = row.dimensionValues?.[0]?.value ?? "";
-    const formatted = `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
-    return {
-      date: formatted,
-      visitors: parseInt(row.metricValues?.[0]?.value ?? "0"),
-    };
-  });
-
-  return {
-    totalVisitors,
-    avgSessionDurationSeconds: Math.round(avgDuration),
-    topSource: friendlySource,
-    dailyVisitors,
-    topPages,
-    previousPeriodVisitors: previousVisitors,
-    growthPercent,
-    propertyId,
-    websiteUrl,
-  };
 }
-
-function friendlyChannelName(channel: string): string {
-  const map: Record<string, string> = {
-    "Organic Search": "Google Search",
-    "Direct": "Direct visits",
-    "Referral": "Other websites",
-    "Organic Social": "Social media",
-    "Paid Search": "Paid ads",
-    "Email": "Email campaigns",
-    "Display": "Display ads",
-  };
-  return map[channel] ?? channel;
-}
-
-// ─── Mock Data fallback (re-exported from shared types) ─────────────────────
-export { getMockGA4Metrics } from "@/types/analytics";
