@@ -54,8 +54,23 @@ export async function fetchGA4Metrics(userId: string): Promise<GA4Metrics> {
     const { oauth2Client, dbUser } = await getAuthenticatedClient(userId);
 
     const analyticsAdmin = google.analyticsadmin({ version: "v1beta", auth: oauth2Client });
+
+    // Step 1: Get the user's GA4 account
+    const accountsRes = await analyticsAdmin.accounts.list();
+    console.log("[GA4] Accounts response:", JSON.stringify(accountsRes.data));
+
+    const account = accountsRes.data.accounts?.[0];
+    const accountName = account?.name;
+    console.log("[GA4] Account found:", accountName);
+
+    if (!accountName) {
+      console.log("[GA4] No GA4 account found, returning mock data");
+      return getMockGA4Metrics();
+    }
+
+    // Step 2: List properties under that account
     const propertiesRes = await analyticsAdmin.properties.list({
-      filter: "parent:accounts/-",
+      filter: `parent:${accountName}`,
       pageSize: 1,
     });
 
