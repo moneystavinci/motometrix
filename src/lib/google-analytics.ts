@@ -1,10 +1,11 @@
-﻿import { google } from "googleapis";
+import { google } from "googleapis";
 import { decrypt } from "@/lib/encryption";
 import { prisma } from "@/lib/prisma";
 import type { GA4Metrics } from "@/types/analytics";
 import { getMockGA4Metrics } from "@/types/analytics";
 
 export type { GA4Metrics } from "@/types/analytics";
+export { getMockGA4Metrics } from "@/types/analytics";
 
 async function getAuthenticatedClient(userId: string) {
   console.log("[GA4] getAuthenticatedClient called for userId:", userId);
@@ -22,7 +23,6 @@ async function getAuthenticatedClient(userId: string) {
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET
   );
-  export { getMockGA4Metrics } from "@/types/analytics";
 
   oauth2Client.setCredentials({
     access_token: accessToken,
@@ -30,7 +30,6 @@ async function getAuthenticatedClient(userId: string) {
     expiry_date: dbUser.tokenExpiresAt?.getTime(),
   });
 
-  // Auto-refresh handler — persists new token back to DB
   oauth2Client.on("tokens", async (tokens) => {
     if (tokens.access_token) {
       const encrypted = await import("@/lib/encryption").then((m) =>
@@ -54,7 +53,6 @@ export async function fetchGA4Metrics(userId: string): Promise<GA4Metrics> {
   try {
     const { oauth2Client, dbUser } = await getAuthenticatedClient(userId);
 
-    // 1. Discover GA4 property
     const analyticsAdmin = google.analyticsadmin({ version: "v1beta", auth: oauth2Client });
     const propertiesRes = await analyticsAdmin.properties.list({
       filter: "parent:accounts/-",
@@ -68,7 +66,6 @@ export async function fetchGA4Metrics(userId: string): Promise<GA4Metrics> {
 
     console.log("[GA4] Property ID found:", propertyId);
 
-    // Auto-detect website URL from GA4 property
     let websiteUrl = dbUser.websiteUrl ?? null;
     if (!websiteUrl && property?.displayName) {
       try {
@@ -187,4 +184,17 @@ export async function fetchGA4Metrics(userId: string): Promise<GA4Metrics> {
     console.error("[GA4] fetchGA4Metrics error:", err);
     return getMockGA4Metrics();
   }
+}
+
+function friendlyChannelName(channel: string): string {
+  const map: Record<string, string> = {
+    "Organic Search": "Google Search",
+    "Direct": "Direct visits",
+    "Referral": "Other websites",
+    "Organic Social": "Social media",
+    "Paid Search": "Paid ads",
+    "Email": "Email campaigns",
+    "Display": "Display ads",
+  };
+  return map[channel] ?? channel;
 }
