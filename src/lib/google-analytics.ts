@@ -56,8 +56,12 @@ export async function fetchGA4Metrics(userId: string): Promise<GA4Metrics> {
     pageSize: 1,
   });
 
+  console.log("[GA4] Properties response:", JSON.stringify(propertiesRes.data));
+
   const property = propertiesRes.data.properties?.[0];
   const propertyId = property?.name?.replace("properties/", "") ?? null;
+  
+  console.log("[GA4] Property ID found:", propertyId);
 
   // Auto-detect website URL from GA4 property
   let websiteUrl = dbUser.websiteUrl ?? null;
