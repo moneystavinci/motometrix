@@ -22,6 +22,7 @@ async function getAuthenticatedClient(userId: string) {
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET
   );
+  export { getMockGA4Metrics } from "@/types/analytics";
 
   oauth2Client.setCredentials({
     access_token: accessToken,
