@@ -49,7 +49,14 @@ async function getAuthenticatedClient(userId: string) {
 }
 
 export async function fetchGA4Metrics(userId: string): Promise<GA4Metrics> {
+  console.log("[GA4] fetchGA4Metrics called for userId:", userId);
+  try {
   const { oauth2Client, dbUser } = await getAuthenticatedClient(userId);
+
+    } catch (err) {
+    console.error("[GA4] fetchGA4Metrics error:", err);
+    return getMockGA4Metrics();
+  }
 
   // 1. Discover GA4 property
   const analyticsAdmin = google.analyticsadmin({ version: "v1beta", auth: oauth2Client });
