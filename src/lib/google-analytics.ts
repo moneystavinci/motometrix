@@ -51,7 +51,7 @@ async function getAuthenticatedClient(userId: string) {
 export async function fetchGA4Metrics(userId: string): Promise<GA4Metrics> {
   console.log("[GA4] fetchGA4Metrics called for userId:", userId);
   try {
-  const { oauth2Client, dbUser } = await getAuthenticatedClient(userId);
+    const { oauth2Client, dbUser } = await getAuthenticatedClient(userId);
 
     } catch (err) {
     console.error("[GA4] fetchGA4Metrics error:", err);
