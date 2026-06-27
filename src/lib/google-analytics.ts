@@ -7,7 +7,9 @@ import { getMockGA4Metrics } from "@/types/analytics";
 export type { GA4Metrics } from "@/types/analytics";
 
 async function getAuthenticatedClient(userId: string) {
+  console.log("[GA4] getAuthenticatedClient called for userId:", userId);
   const dbUser = await prisma.user.findUnique({ where: { id: userId } });
+  console.log("[GA4] dbUser found:", !!dbUser, "hasAccessToken:", !!dbUser?.accessToken, "hasRefreshToken:", !!dbUser?.refreshToken);
   if (!dbUser) throw new Error("User not found");
   if (!dbUser.accessToken || !dbUser.refreshToken) {
     throw new Error("User has no stored tokens — demo mode active");
