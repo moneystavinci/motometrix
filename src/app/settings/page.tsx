@@ -3,8 +3,17 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+interface GA4Property {
+  id: string;
+  displayName: string;
+  websiteUrl: string | null;
+}
+
 export default function SettingsPage() {
   const [searchConsoleUrl, setSearchConsoleUrl] = useState("");
+  const [ga4PropertyId, setGa4PropertyId] = useState("");
+  const [properties, setProperties] = useState<GA4Property[]>([]);
+  const [loadingProperties, setLoadingProperties] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -15,7 +24,15 @@ export default function SettingsPage() {
       .then((r) => r.json())
       .then((data) => {
         setSearchConsoleUrl(data.searchConsoleUrl || "");
+        setGa4PropertyId(data.ga4PropertyId || "");
         setLoading(false);
+      });
+
+    fetch("/api/ga4-properties")
+      .then((r) => r.json())
+      .then((data) => {
+        setProperties(data.properties || []);
+        setLoadingProperties(false);
       });
   }, []);
 
@@ -27,7 +44,7 @@ export default function SettingsPage() {
       const res = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ searchConsoleUrl }),
+        body: JSON.stringify({ searchConsoleUrl, ga4PropertyId }),
       });
       if (!res.ok) throw new Error("Failed to save");
       setSaved(true);
@@ -54,18 +71,54 @@ export default function SettingsPage() {
         <div className="mb-10">
           <p className="text-xs font-medium tracking-widest uppercase mb-3" style={{ color: "#e6b820" }}>Configuration</p>
           <h1 className="text-white font-bold mb-4" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(1.6rem, 3vw, 2.2rem)" }}>Settings</h1>
-          <p className="text-navy-300 text-sm leading-relaxed">
-            Your Google Analytics 4 property connects automatically with your Google sign-in.
-            If you have multiple verified sites in Search Console, you can specify which one to show here.
-          </p>
+          <p className="text-navy-300 text-sm leading-relaxed">Select which GA4 property to display and optionally specify your Search Console site.</p>
           <div className="h-px mt-6" style={{ background: "linear-gradient(90deg, #e6b820, transparent)" }} />
         </div>
 
         {loading ? (
-          <div className="skeleton h-20 rounded-2xl" />
+          <div className="space-y-4">
+            <div className="skeleton h-24 rounded-2xl" />
+            <div className="skeleton h-24 rounded-2xl" />
+          </div>
         ) : (
           <div className="space-y-6">
 
+            {/* GA4 Property Selector */}
+            <div className="rounded-2xl p-6" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(230,184,32,0.15)" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ color: "#e6b820" }}>
+                    <path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-white font-semibold text-sm">Google Analytics 4 Property</p>
+                  <p className="text-navy-300 text-xs">Select which website to show data for</p>
+                </div>
+              </div>
+
+              {loadingProperties ? (
+                <div className="skeleton h-12 rounded-xl" />
+              ) : properties.length === 0 ? (
+                <p className="text-navy-300 text-sm">No GA4 properties found on your Google account.</p>
+              ) : (
+                <select
+                  value={ga4PropertyId}
+                  onChange={(e) => setGa4PropertyId(e.target.value)}
+                  className="w-full rounded-xl px-4 py-3 text-sm text-white outline-none transition-all"
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+                >
+                  <option value="" style={{ background: "#0f1f45" }}>Select a property...</option>
+                  {properties.map((prop) => (
+                    <option key={prop.id} value={prop.id} style={{ background: "#0f1f45" }}>
+                      {prop.displayName}{prop.websiteUrl ? ` — ${prop.websiteUrl}` : ""}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* Search Console */}
             <div className="rounded-2xl p-6" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(122,150,200,0.15)" }}>
@@ -88,7 +141,7 @@ export default function SettingsPage() {
                 style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
               />
               <p className="text-navy-300 text-xs mt-2">
-                Leave blank to use your first verified property automatically. Must exactly match the URL in Search Console.
+                Leave blank to use your first verified property automatically.
               </p>
             </div>
 
