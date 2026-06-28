@@ -8,9 +8,18 @@ export type { GA4Metrics } from "@/types/analytics";
 export { getMockGA4Metrics } from "@/types/analytics";
 
 async function getAuthenticatedClient(userId: string) {
-  console.log("[GA4] getAuthenticatedClient called for userId:", userId);
-  const dbUser = await prisma.user.findUnique({ where: { id: userId } });
-  console.log("[GA4] dbUser found:", !!dbUser, "hasAccessToken:", !!dbUser?.accessToken, "hasRefreshToken:", !!dbUser?.refreshToken);
+  const dbUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      accessToken: true,
+      refreshToken: true,
+      tokenExpiresAt: true,
+      websiteUrl: true,
+      ga4PropertyId: true,
+    },
+  });
+
   if (!dbUser) throw new Error("User not found");
   if (!dbUser.accessToken || !dbUser.refreshToken) {
     throw new Error("User has no stored tokens — demo mode active");
@@ -49,56 +58,48 @@ async function getAuthenticatedClient(userId: string) {
 }
 
 export async function fetchGA4Metrics(userId: string): Promise<GA4Metrics> {
-  console.log("[GA4] fetchGA4Metrics called for userId:", userId);
   try {
     const { oauth2Client, dbUser } = await getAuthenticatedClient(userId);
 
     const analyticsAdmin = google.analyticsadmin({ version: "v1beta", auth: oauth2Client });
 
-    // Step 1: Get the user's GA4 account
-    const accountsRes = await analyticsAdmin.accounts.list();
-    console.log("[GA4] Accounts response:", JSON.stringify(accountsRes.data));
-
-    const account = accountsRes.data.accounts?.[0];
-    const accountName = account?.name;
-    console.log("[GA4] Account found:", accountName);
-
-    if (!accountName) {
-      console.log("[GA4] No GA4 account found, returning mock data");
-      return getMockGA4Metrics();
-    }
-
-    // Step 2: List properties under that account
-    const propertiesRes = await analyticsAdmin.properties.list({
-      filter: `parent:${accountName}`,
-      pageSize: 1,
-    });
-
-    console.log("[GA4] Properties response:", JSON.stringify(propertiesRes.data));
-
-    const property = propertiesRes.data.properties?.[0];
-    const propertyId = property?.name?.replace("properties/", "") ?? null;
-
-    console.log("[GA4] Property ID found:", propertyId);
-
+    // Use saved property ID if available, otherwise auto-detect first property
+    let propertyId = dbUser.ga4PropertyId ?? null;
     let websiteUrl = dbUser.websiteUrl ?? null;
-    if (!websiteUrl && property?.displayName) {
-      try {
-        const streams = await analyticsAdmin.properties.dataStreams.list({
-          parent: property.name!,
+
+    if (!propertyId) {
+      const accountsRes = await analyticsAdmin.accounts.list();
+      const account = accountsRes.data.accounts?.[0];
+      if (account?.name) {
+        const propertiesRes = await analyticsAdmin.properties.list({
+          filter: `parent:${account.name}`,
+          pageSize: 1,
         });
-        const webStream = streams.data.dataStreams?.find((s) => s.type === "WEB_DATA_STREAM");
-        if (webStream?.webStreamData?.defaultUri) {
-          websiteUrl = webStream.webStreamData.defaultUri;
-          await prisma.user.update({ where: { id: userId }, data: { websiteUrl } });
+        const property = propertiesRes.data.properties?.[0];
+        propertyId = property?.name?.replace("properties/", "") ?? null;
+
+        // Auto-detect website URL from data stream
+        if (property?.name && !websiteUrl) {
+          try {
+            const streams = await analyticsAdmin.properties.dataStreams.list({
+              parent: property.name,
+            });
+            const webStream = streams.data.dataStreams?.find(
+              (s) => s.type === "WEB_DATA_STREAM"
+            );
+            if (webStream?.webStreamData?.defaultUri) {
+              websiteUrl = webStream.webStreamData.defaultUri;
+              await prisma.user.update({ where: { id: userId }, data: { websiteUrl } });
+            }
+          } catch {
+            // Non-critical
+          }
         }
-      } catch {
-        // Non-critical
       }
     }
 
     if (!propertyId) {
-      console.log("[GA4] No propertyId found, returning mock data");
+      console.error("[GA4] No property ID found, returning mock data");
       return getMockGA4Metrics();
     }
 
@@ -163,7 +164,8 @@ export async function fetchGA4Metrics(userId: string): Promise<GA4Metrics> {
         ? Math.round(((totalVisitors - previousVisitors) / previousVisitors) * 100)
         : 0;
 
-    const topSource = topSourceReport.data.rows?.[0]?.dimensionValues?.[0]?.value ?? "Direct";
+    const topSource =
+      topSourceReport.data.rows?.[0]?.dimensionValues?.[0]?.value ?? "Direct";
     const friendlySource = friendlyChannelName(topSource);
 
     const topPages: Array<{ page: string; visitors: number }> = (
