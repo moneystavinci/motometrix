@@ -8,12 +8,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { searchConsoleUrl } = await req.json();
+  const { searchConsoleUrl, ga4PropertyId } = await req.json();
 
   await prisma.user.update({
     where: { email: session.user.email },
     data: {
       searchConsoleUrl: searchConsoleUrl || null,
+      ga4PropertyId: ga4PropertyId || null,
     },
   });
 
@@ -28,7 +29,7 @@ export async function GET() {
 
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
-    select: { searchConsoleUrl: true },
+    select: { searchConsoleUrl: true, ga4PropertyId: true },
   });
 
   return NextResponse.json(user);
